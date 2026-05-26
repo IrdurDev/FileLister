@@ -70,7 +70,7 @@ Distributed under the **MIT License**. See `LICENSE.md` for more information.
 
 **使用步骤：**
 
-1. 下载 `FileLister-v1.0.html`
+1. 下载 `FileLister_Chinese-v1.0.html`
 2. 双击用浏览器打开
 3. 点击“上传文件”，选择文件
 4. 点击排序按钮重新排列
