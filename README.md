@@ -5,6 +5,9 @@
 [![Made with HTML](https://img.shields.io/badge/Made%20with-HTML-orange)](https://developer.mozilla.org/en-US/docs/Web/HTML)
 [![GitHub last commit](https://img.shields.io/github/last-commit/IrdurDev/FileLister)](https://github.com/IrdurDev/FileLister/commits/main)
 
+![Multilingual](https://img.shields.io/badge/Multilingual-12%20languages-blue)
+![中文](https://img.shields.io/badge/中文-简体%20%7C%20繁體%20%7C%20文言文-red)
+
 **FileLister** is a lightweight, client-side HTML/JavaScript tool that lets you upload any files, view their names and metadata in a sortable list, and export the list as a `.txt` file. No server, no dependencies – just open the HTML file in your browser and start managing your file lists.
 
 ## ✨ Features
