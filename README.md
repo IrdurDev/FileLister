@@ -37,19 +37,10 @@
 - All processing happens locally – files are never uploaded to any server.
 - Responsive design – works on desktop and mobile browsers.
 
-
 ## 📜 License
 
 Distributed under the **MIT License**. See `LICENSE.md` for more information.
 
-## 🤝 Contributing
-
-Feel free to fork, improve, and submit pull requests. For major changes, please open an issue first to discuss what you would like to change.
-
-## 📧 Contact
-
-If you have any questions or suggestions, open an issue on GitHub.
-
 ---
 
-*Made with ❤️ for simple file name listing and sorting.*
+*Feel free to modify and adapt the code to your needs.*
