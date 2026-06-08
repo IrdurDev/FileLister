@@ -45,7 +45,7 @@
 
 ## 📦 Releases
 
-- **Latest stable version:** [v1.0](https://github.com/IrdurDev/FileLister/releases/latest)
+- **Latest stable version:** [v1.1](https://github.com/IrdurDev/FileLister/releases/latest)
 - **All releases:** [GitHub Releases](https://github.com/IrdurDev/FileLister/releases)
 
 > ⚡ The latest version includes 12 languages, sorting options, and .txt export.
