@@ -54,9 +54,10 @@
 
 Distributed under the **MIT License**. See `LICENSE.md` for more information.
 
----
 
 *Feel free to modify and adapt the code to your needs.*
+
+---
 
 ## 📁 FileLister – 文件列表工具
 
