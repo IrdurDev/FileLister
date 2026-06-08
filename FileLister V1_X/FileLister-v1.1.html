@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>FileLister - Upload, sort & export file names</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: system-ui, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(145deg, #f3f6fc 0%, #e9eef4 100%);
+            margin: 0;
+            min-height: 100vh;
+            padding: 2rem 1.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .card {
+            max-width: 1400px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.92);
+            border-radius: 2rem;
+            box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.25), 0 4px 12px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.6);
+        }
+
+        .header {
+            background: #ffffffcc;
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-weight: 700;
+            font-size: 1.9rem;
+            background: linear-gradient(135deg, #1F2B3C, #2c3e66);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            letter-spacing: -0.3px;
+        }
+
+        .lang-selector {
+            background: white;
+            border: 1px solid #cbdde9;
+            border-radius: 40px;
+            padding: 0.4rem 0.8rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .action-bar {
+            padding: 1.25rem 2rem;
+            background: #f8fafd;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #e9edf2;
+        }
+
+        .upload-area {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .file-input-label {
+            background: #1e2f41;
+            color: white;
+            padding: 0.6rem 1.4rem;
+            border-radius: 60px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .file-input-label:hover {
+            background: #0f2538;
+            transform: translateY(-1px);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .btn-clear {
+            background: #eef2f8;
+            border: 1px solid #cfdfed;
+            padding: 0.6rem 1.2rem;
+            border-radius: 60px;
+            font-weight: 500;
+            color: #2c3e50;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.85rem;
+        }
+
+        .btn-clear:hover {
+            background: #e2e8f0;
+        }
+
+        .btn-download {
+            background: #2b5f3b;
+            color: white;
+            border: none;
+            padding: 0.6rem 1.5rem;
+            border-radius: 60px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-download:hover {
+            background: #1e472c;
+            transform: scale(0.97);
+        }
+
+        .sort-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.65rem;
+            align-items: center;
+            background: #ffffffcc;
+            padding: 0.4rem 0.8rem;
+            border-radius: 48px;
+        }
+
+        .sort-group span {
+            font-weight: 600;
+            color: #1f3b4c;
+            font-size: 0.85rem;
+        }
+
+        .sort-btn {
+            background: transparent;
+            border: 1px solid #cbdde9;
+            padding: 0.45rem 1rem;
+            border-radius: 32px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.15s;
+            color: #1e2f3c;
+        }
+
+        .sort-btn.active {
+            background: #1e2f41;
+            border-color: #1e2f41;
+            color: white;
+        }
+
+        .sort-btn:hover:not(.active) {
+            background: #e2ebf3;
+        }
+
+        .files-container {
+            padding: 1rem 2rem 2rem 2rem;
+            background: #ffffff;
+            transition: all 0.2s ease;
+            border-radius: 1rem;
+            margin: 0.5rem;
+            border: 2px solid transparent;
+        }
+
+        .files-container.drag-over {
+            border-color: #2c5f8a;
+            background-color: #eef5fd;
+            box-shadow: inset 0 0 0 1px rgba(44, 95, 138, 0.2);
+        }
+
+        .drag-hint {
+            background: #f0f4fa;
+            border-radius: 60px;
+            padding: 0.4rem 1rem;
+            font-size: 0.75rem;
+            color: #2c5f8a;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .files-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .files-table th {
+            text-align: left;
+            padding: 1rem 0.8rem 0.8rem 0.8rem;
+            font-weight: 600;
+            color: #2d3e50;
+            border-bottom: 2px solid #e2edf2;
+        }
+
+        .files-table td {
+            padding: 0.9rem 0.8rem;
+            border-bottom: 1px solid #ecf3f8;
+            vertical-align: middle;
+        }
+
+        .files-table tr:hover td {
+            background-color: #f9fbfe;
+        }
+
+        .file-name {
+            font-weight: 500;
+            word-break: break-word;
+            font-family: monospace;
+        }
+
+        .file-size {
+            background: #f0f4f9;
+            display: inline-block;
+            padding: 0.2rem 0.7rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            font-size: 1.3rem;
+            cursor: pointer;
+            color: #acbed0;
+        }
+
+        .delete-btn:hover {
+            color: #dc3545;
+        }
+
+        .empty-message {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #6c7e91;
+            font-style: italic;
+        }
+
+        .badge-counter {
+            background: #d9e6f2;
+            border-radius: 40px;
+            padding: 0.2rem 0.8rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 0.8rem;
+            color: #1f4662;
+        }
+
+        footer {
+            background: #f1f5f9;
+            padding: 0.8rem 2rem;
+            font-size: 0.7rem;
+            color: #6c7e91;
+            text-align: right;
+            border-top: 1px solid #e2edf2;
+        }
+
+        @media (max-width: 700px) {
+            body { padding: 1rem; }
+            .action-bar { flex-direction: column; align-items: stretch; }
+            .sort-group { justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="header">
+        <h1 id="appTitle">📁 FileLister</h1>
+        <select id="languageSwitcher" class="lang-selector">
+            <option value="en">🇬🇧 English</option>
+            <option value="es">🇪🇸 Español</option>
+            <option value="fr">🇫🇷 Français</option>
+            <option value="it">🇮🇹 Italiano</option>
+            <option value="ca">🏴󠁥󠁳󠁣󠁴󠁿 Català</option>
+            <option value="la">🏛️ Latina</option>
+            <option value="eo">🌐 Esperanto</option>
+            <option value="ru">🇷🇺 Русский</option>
+            <option value="ja">🇯🇵 日本語</option>
+            <option value="ko">🇰🇷 한국어</option>
+            <option value="hi">🇮🇳 हिन्दी</option>
+            <option value="pt-BR">🇧🇷 Português (Brasil)</option>
+        </select>
+    </div>
+
+    <div class="action-bar">
+        <div class="upload-area">
+            <label class="file-input-label" id="uploadBtnLabel">
+                📂 + Upload files
+                <input type="file" id="fileInput" multiple>
+            </label>
+            <button class="btn-clear" id="clearAllBtn">🗑️ Clear list</button>
+        </div>
+        <div class="sort-group">
+            <span id="sortLabel">🔽 Sort by:</span>
+            <button data-sort="alpha" class="sort-btn" id="sortAlpha">🔤 Alphabetical</button>
+            <button data-sort="alnum" class="sort-btn" id="sortAlnum">🔢 Alphanumeric</button>
+            <button data-sort="date" class="sort-btn" id="sortDate">📅 Date (modified)</button>
+            <button data-sort="size" class="sort-btn" id="sortSize">⚖️ Size</button>
+        </div>
+        <button class="btn-download" id="downloadTxtBtn">📄 Download .txt list</button>
+    </div>
+
+    <div class="files-container" id="dropZone">
+        <div class="drag-hint">📁 Arrastra y suelta archivos aquí / Drag & drop files anywhere in this area</div>
+        <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap;">
+            <h3 id="filesTitle" style="margin: 0 0 0.5rem 0; font-weight: 500;">📋 Uploaded files</h3>
+            <span id="filesCountBadge" class="badge-counter">0 files</span>
+        </div>
+        <div id="fileListArea">
+            <div class="empty-message" id="emptyMessage">✨ No files. Use the "Upload files" button or drag & drop to start.</div>
+        </div>
+    </div>
+    <footer id="footerText">
+        ⚡ Click sort to reorder • Each file can be deleted individually
+    </footer>
+</div>
+
+<script>
+    // ---------- i18n Translations (12 idiomas) ----------
+    const translations = {
+        en: {
+            appTitle: "📁 FileLister",
+            uploadBtn: "📂 + Upload files",
+            clearBtn: "🗑️ Clear list",
+            sortLabel: "🔽 Sort by:",
+            sortAlpha: "🔤 Alphabetical",
+            sortAlnum: "🔢 Alphanumeric",
+            sortDate: "📅 Date (modified)",
+            sortSize: "⚖️ Size",
+            downloadBtn: "📄 Download .txt list",
+            filesTitle: "📋 Uploaded files",
+            emptyMessage: "✨ No files. Use the \"Upload files\" button or drag & drop to start.",
+            footer: "⚡ Click sort to reorder • Each file can be deleted individually",
+            tableHeaderName: "📄 File name",
+            tableHeaderSize: "💾 Size",
+            tableHeaderDate: "📅 Modification date",
+            tableHeaderAction: "🗑️ Action",
+            deleteTitle: "Delete file",
+            confirmClear: "Delete ALL files from the list?",
+            noFilesAlert: "No files to clear.",
+            noFilesExport: "No files in the list to export.",
+            exportHeader: "FILE LIST",
+            exportGenerated: "Generated on",
+            exportTotal: "Total files",
+            exportName: "NAME",
+            exportSize: "Size",
+            exportDate: "Date",
+            emptyListMsg: "📭 No files. Upload documents or drag & drop to see them here."
+        },
+        es: {
+            appTitle: "📁 Gestor de Archivos",
+            uploadBtn: "📂 + Subir archivos",
+            clearBtn: "🗑️ Limpiar lista",
+            sortLabel: "🔽 Ordenar por:",
+            sortAlpha: "🔤 Alfabético",
+            sortAlnum: "🔢 Alfanumérico",
+            sortDate: "📅 Fecha (modif.)",
+            sortSize: "⚖️ Tamaño",
+            downloadBtn: "📄 Descargar .txt con la lista",
+            filesTitle: "📋 Archivos subidos",
+            emptyMessage: "✨ No hay archivos. Usa el botón \"Subir archivos\" o arrastra y suelta.",
+            footer: "⚡ Clic en ordenar reorganiza la vista • Cada archivo se puede eliminar individualmente",
+            tableHeaderName: "📄 Nombre del archivo",
+            tableHeaderSize: "💾 Tamaño",
+            tableHeaderDate: "📅 Fecha (modificación)",
+            tableHeaderAction: "🗑️ Acción",
+            deleteTitle: "Eliminar archivo",
+            confirmClear: "¿Eliminar TODOS los archivos de la lista?",
+            noFilesAlert: "No hay archivos para limpiar.",
+            noFilesExport: "No hay archivos en la lista para exportar.",
+            exportHeader: "LISTA DE ARCHIVOS",
+            exportGenerated: "Generado el",
+            exportTotal: "Total de archivos",
+            exportName: "NOMBRE",
+            exportSize: "Tamaño",
+            exportDate: "Fecha",
+            emptyListMsg: "📭 No hay archivos. Sube documentos o arrastra y suelta."
+        },
+        fr: {
+            appTitle: "📁 Gestionnaire de fichiers",
+            uploadBtn: "📂 + Téléverser",
+            clearBtn: "🗑️ Effacer la liste",
+            sortLabel: "🔽 Trier par :",
+            sortAlpha: "🔤 Alphabétique",
+            sortAlnum: "🔢 Alphanumérique",
+            sortDate: "📅 Date (modif.)",
+            sortSize: "⚖️ Taille",
+            downloadBtn: "📄 Télécharger .txt",
+            filesTitle: "📋 Fichiers téléversés",
+            emptyMessage: "✨ Aucun fichier. Utilisez « Téléverser » ou glissez-déposez.",
+            footer: "⚡ Cliquez pour trier • Suppression individuelle possible",
+            tableHeaderName: "📄 Nom du fichier",
+            tableHeaderSize: "💾 Taille",
+            tableHeaderDate: "📅 Date de modification",
+            tableHeaderAction: "🗑️ Action",
+            deleteTitle: "Supprimer",
+            confirmClear: "Supprimer TOUS les fichiers ?",
+            noFilesAlert: "Aucun fichier à effacer.",
+            noFilesExport: "Aucun fichier à exporter.",
+            exportHeader: "LISTE DES FICHIERS",
+            exportGenerated: "Généré le",
+            exportTotal: "Total fichiers",
+            exportName: "NOM",
+            exportSize: "Taille",
+            exportDate: "Date",
+            emptyListMsg: "📭 Aucun fichier. Glissez-déposez des documents."
+        },
+        it: {
+            appTitle: "📁 FileLister",
+            uploadBtn: "📂 + Carica file",
+            clearBtn: "🗑️ Pulisci lista",
+            sortLabel: "🔽 Ordina per:",
+            sortAlpha: "🔤 Alfabetico",
+            sortAlnum: "🔢 Alfanumerico",
+            sortDate: "📅 Data (mod.)",
+            sortSize: "⚖️ Dimensione",
+            downloadBtn: "📄 Scarica .txt",
+            filesTitle: "📋 File caricati",
+            emptyMessage: "✨ Nessun file. Usa \"Carica file\" o trascina i file.",
+            footer: "⚡ Clicca per ordinare • Eliminazione singola",
+            tableHeaderName: "📄 Nome file",
+            tableHeaderSize: "💾 Dimensione",
+            tableHeaderDate: "📅 Data modifica",
+            tableHeaderAction: "🗑️ Azione",
+            deleteTitle: "Elimina",
+            confirmClear: "Eliminare TUTTI i file?",
+            noFilesAlert: "Nessun file da pulire.",
+            noFilesExport: "Nessun file da esportare.",
+            exportHeader: "LISTA DEI FILE",
+            exportGenerated: "Generato il",
+            exportTotal: "Totale file",
+            exportName: "NOME",
+            exportSize: "Dimensione",
+            exportDate: "Data",
+            emptyListMsg: "📭 Nessun file. Trascina documenti qui."
+        },
+        ca: {
+            appTitle: "📁 FileLister",
+            uploadBtn: "📂 + Pujar fitxers",
+            clearBtn: "🗑️ Netejar llista",
+            sortLabel: "🔽 Ordenar per:",
+            sortAlpha: "🔤 Alfabètic",
+            sortAlnum: "🔢 Alfanumèric",
+            sortDate: "📅 Data (modif.)",
+            sortSize: "⚖️ Mida",
+            downloadBtn: "📄 Descarregar .txt",
+            filesTitle: "📋 Fitxers pujats",
+            emptyMessage: "✨ Cap fitxer. Utilitza \"Pujar fitxers\" o arrossega.",
+            footer: "⚡ Clica per ordenar • Eliminació individual",
+            tableHeaderName: "📄 Nom del fitxer",
+            tableHeaderSize: "💾 Mida",
+            tableHeaderDate: "📅 Data modificació",
+            tableHeaderAction: "🗑️ Acció",
+            deleteTitle: "Eliminar",
+            confirmClear: "Eliminar TOTS els fitxers?",
+            noFilesAlert: "No hi ha fitxers a netejar.",
+            noFilesExport: "No hi ha fitxers per exportar.",
+            exportHeader: "LLISTA DE FITXERS",
+            exportGenerated: "Generat el",
+            exportTotal: "Total fitxers",
+            exportName: "NOM",
+            exportSize: "Mida",
+            exportDate: "Data",
+            emptyListMsg: "📭 Cap fitxer. Arrossega documents."
+        },
+        la: {
+            appTitle: "📁 Index Fasciculorum",
+            uploadBtn: "📂 + Adde fasciculos",
+            clearBtn: "🗑️ Delete listam",
+            sortLabel: "🔽 Ordina per:",
+            sortAlpha: "🔤 Alphabetice",
+            sortAlnum: "🔢 Alphanumerice",
+            sortDate: "📅 Tempus mutationis",
+            sortSize: "⚖️ Magnitudo",
+            downloadBtn: "📄 Descarga .txt",
+            filesTitle: "📋 Fasciculi impositi",
+            emptyMessage: "✨ Nulli fasciculi. Utere \"Adde fasciculos\" vel extrahe.",
+            footer: "⚡ Clicte ad ordinandum • Singula delere potes",
+            tableHeaderName: "📄 Nomen",
+            tableHeaderSize: "💾 Magnitudo",
+            tableHeaderDate: "📅 Dies mutationis",
+            tableHeaderAction: "🗑️ Actio",
+            deleteTitle: "Delete",
+            confirmClear: "Omnes fasciculos delere?",
+            noFilesAlert: "Nulli fasciculi ad delendum.",
+            noFilesExport: "Nulli fasciculi ad educendum.",
+            exportHeader: "INDEX FASCICULORUM",
+            exportGenerated: "Creatus die",
+            exportTotal: "Summa fasciculorum",
+            exportName: "NOMEN",
+            exportSize: "Magnitudo",
+            exportDate: "Dies",
+            emptyListMsg: "📭 Nulli fasciculi. Extrahe documenta."
+        },
+        eo: {
+            appTitle: "📁 DosierListilo",
+            uploadBtn: "📂 + Alŝuti dosierojn",
+            clearBtn: "🗑️ Viŝi liston",
+            sortLabel: "🔽 Ordigi laŭ:",
+            sortAlpha: "🔤 Alfabete",
+            sortAlnum: "🔢 Alfanumere",
+            sortDate: "📅 Dato (modif.)",
+            sortSize: "⚖️ Grandeco",
+            downloadBtn: "📄 Elŝuti .txt",
+            filesTitle: "📋 Alŝutitaj dosieroj",
+            emptyMessage: "✨ Neniu dosiero. Uzu 'Alŝuti' aŭ treni.",
+            footer: "⚡ Klaku por ordigi • Vi povas forigi unuope",
+            tableHeaderName: "📄 Nomo",
+            tableHeaderSize: "💾 Grandeco",
+            tableHeaderDate: "📅 Modifita dato",
+            tableHeaderAction: "🗑️ Ago",
+            deleteTitle: "Forigi",
+            confirmClear: "Ĉu forigi ĈIUJN dosierojn?",
+            noFilesAlert: "Neniu dosiero por viŝi.",
+            noFilesExport: "Neniu dosiero por elporti.",
+            exportHeader: "LISTO DE DOSIEROJ",
+            exportGenerated: "Generita la",
+            exportTotal: "Sumo da dosieroj",
+            exportName: "NOMO",
+            exportSize: "Grandeco",
+            exportDate: "Dato",
+            emptyListMsg: "📭 Neniu dosiero. Trenu dokumentojn."
+        },
+        ru: {
+            appTitle: "📁 Файловый список",
+            uploadBtn: "📂 + Загрузить файлы",
+            clearBtn: "🗑️ Очистить список",
+            sortLabel: "🔽 Сортировать:",
+            sortAlpha: "🔤 Алфавиту",
+            sortAlnum: "🔢 Алфавитно-цифр.",
+            sortDate: "📅 Дате (изм.)",
+            sortSize: "⚖️ Размеру",
+            downloadBtn: "📄 Скачать .txt",
+            filesTitle: "📋 Загруженные файлы",
+            emptyMessage: "✨ Нет файлов. Используйте кнопку или перетаскивание.",
+            footer: "⚡ Нажмите для сортировки • Удаление по одному",
+            tableHeaderName: "📄 Имя файла",
+            tableHeaderSize: "💾 Размер",
+            tableHeaderDate: "📅 Дата изменения",
+            tableHeaderAction: "🗑️ Действие",
+            deleteTitle: "Удалить",
+            confirmClear: "Удалить ВСЕ файлы?",
+            noFilesAlert: "Нет файлов для очистки.",
+            noFilesExport: "Нет файлов для экспорта.",
+            exportHeader: "СПИСОК ФАЙЛОВ",
+            exportGenerated: "Создан",
+            exportTotal: "Всего файлов",
+            exportName: "ИМЯ",
+            exportSize: "Размер",
+            exportDate: "Дата",
+            emptyListMsg: "📭 Нет файлов. Перетащите документы."
+        },
+        ja: {
+            appTitle: "📁 ファイルリスト",
+            uploadBtn: "📂 + ファイルをアップロード",
+            clearBtn: "🗑️ リストをクリア",
+            sortLabel: "🔽 並べ替え:",
+            sortAlpha: "🔤 アルファベット順",
+            sortAlnum: "🔢 英数字順",
+            sortDate: "📅 更新日時",
+            sortSize: "⚖️ ファイルサイズ",
+            downloadBtn: "📄 .txtをダウンロード",
+            filesTitle: "📋 アップロード済み",
+            emptyMessage: "✨ ファイルがありません。「アップロード」またはドラッグ＆ドロップ",
+            footer: "⚡ クリックで並べ替え • 個別削除可能",
+            tableHeaderName: "📄 ファイル名",
+            tableHeaderSize: "💾 サイズ",
+            tableHeaderDate: "📅 更新日",
+            tableHeaderAction: "🗑️ 削除",
+            deleteTitle: "削除",
+            confirmClear: "全てのファイルを削除しますか？",
+            noFilesAlert: "クリアするファイルがありません。",
+            noFilesExport: "エクスポートするファイルがありません。",
+            exportHeader: "ファイル一覧",
+            exportGenerated: "生成日時",
+            exportTotal: "総ファイル数",
+            exportName: "ファイル名",
+            exportSize: "サイズ",
+            exportDate: "日付",
+            emptyListMsg: "📭 ファイルがありません。ドキュメントをドロップしてください。"
+        },
+        ko: {
+            appTitle: "📁 파일 목록",
+            uploadBtn: "📂 + 파일 업로드",
+            clearBtn: "🗑️ 목록 지우기",
+            sortLabel: "🔽 정렬 기준:",
+            sortAlpha: "🔤 알파벳순",
+            sortAlnum: "🔢 영숫자순",
+            sortDate: "📅 수정 날짜",
+            sortSize: "⚖️ 크기순",
+            downloadBtn: "📄 .txt 다운로드",
+            filesTitle: "📋 업로드된 파일",
+            emptyMessage: "✨ 파일이 없습니다. '업로드' 또는 드래그앤드롭.",
+            footer: "⚡ 클릭하여 정렬 • 개별 삭제 가능",
+            tableHeaderName: "📄 파일명",
+            tableHeaderSize: "💾 크기",
+            tableHeaderDate: "📅 수정일",
+            tableHeaderAction: "🗑️ 삭제",
+            deleteTitle: "삭제",
+            confirmClear: "모든 파일을 삭제하시겠습니까?",
+            noFilesAlert: "지울 파일이 없습니다.",
+            noFilesExport: "내보낼 파일이 없습니다.",
+            exportHeader: "파일 목록",
+            exportGenerated: "생성 일시",
+            exportTotal: "총 파일 수",
+            exportName: "파일명",
+            exportSize: "크기",
+            exportDate: "날짜",
+            emptyListMsg: "📭 파일이 없습니다. 문서를 드래그하세요."
+        },
+        hi: {
+            appTitle: "📁 फ़ाइल सूची",
+            uploadBtn: "📂 + फ़ाइलें अपलोड करें",
+            clearBtn: "🗑️ सूची साफ़ करें",
+            sortLabel: "🔽 क्रमबद्ध करें:",
+            sortAlpha: "🔤 वर्णानुक्रम",
+            sortAlnum: "🔢 आल्फ़ान्यूमेरिक",
+            sortDate: "📅 तिथि (संशोधित)",
+            sortSize: "⚖️ आकार",
+            downloadBtn: "📄 .txt डाउनलोड करें",
+            filesTitle: "📋 अपलोड की गई फ़ाइलें",
+            emptyMessage: "✨ कोई फ़ाइल नहीं। 'अपलोड' बटन या ड्रैग एंड ड्रॉप।",
+            footer: "⚡ क्रमबद्ध करने के लिए क्लिक करें • प्रत्येक फ़ाइल अलग से हटाई जा सकती है",
+            tableHeaderName: "📄 फ़ाइल का नाम",
+            tableHeaderSize: "💾 आकार",
+            tableHeaderDate: "📅 संशोधन तिथि",
+            tableHeaderAction: "🗑️ क्रिया",
+            deleteTitle: "हटाएँ",
+            confirmClear: "सभी फ़ाइलें हटाएँ?",
+            noFilesAlert: "साफ़ करने के लिए कोई फ़ाइल नहीं।",
+            noFilesExport: "निर्यात करने के लिए कोई फ़ाइल नहीं।",
+            exportHeader: "फ़ाइल सूची",
+            exportGenerated: "उत्पन्न तिथि",
+            exportTotal: "कुल फ़ाइलें",
+            exportName: "नाम",
+            exportSize: "आकार",
+            exportDate: "तिथि",
+            emptyListMsg: "📭 कोई फ़ाइल नहीं। दस्तावेज़ ड्रैग करें।"
+        },
+        "pt-BR": {
+            appTitle: "📁 FileLister",
+            uploadBtn: "📂 + Enviar arquivos",
+            clearBtn: "🗑️ Limpar lista",
+            sortLabel: "🔽 Ordenar por:",
+            sortAlpha: "🔤 Alfabético",
+            sortAlnum: "🔢 Alfanumérico",
+            sortDate: "📅 Data (modif.)",
+            sortSize: "⚖️ Tamanho",
+            downloadBtn: "📄 Baixar .txt",
+            filesTitle: "📋 Arquivos enviados",
+            emptyMessage: "✨ Nenhum arquivo. Use o botão ou arraste e solte.",
+            footer: "⚡ Clique para ordenar • Pode excluir individualmente",
+            tableHeaderName: "📄 Nome do arquivo",
+            tableHeaderSize: "💾 Tamanho",
+            tableHeaderDate: "📅 Data modificação",
+            tableHeaderAction: "🗑️ Ação",
+            deleteTitle: "Excluir",
+            confirmClear: "Excluir TODOS os arquivos?",
+            noFilesAlert: "Nenhum arquivo para limpar.",
+            noFilesExport: "Nenhum arquivo para exportar.",
+            exportHeader: "LISTA DE ARQUIVOS",
+            exportGenerated: "Gerado em",
+            exportTotal: "Total de arquivos",
+            exportName: "NOME",
+            exportSize: "Tamanho",
+            exportDate: "Data",
+            emptyListMsg: "📭 Nenhum arquivo. Arraste documentos aqui."
+        }
+    };
+
+    let currentLang = 'en';
+    let allFiles = [];
+    let activeSort = null;
+    let nextId = 1;
+
+    const fileInput = document.getElementById('fileInput');
+    const clearBtn = document.getElementById('clearAllBtn');
+    const downloadBtn = document.getElementById('downloadTxtBtn');
+    const sortAlpha = document.getElementById('sortAlpha');
+    const sortAlnum = document.getElementById('sortAlnum');
+    const sortDate = document.getElementById('sortDate');
+    const sortSize = document.getElementById('sortSize');
+    const fileListArea = document.getElementById('fileListArea');
+    const filesCountBadge = document.getElementById('filesCountBadge');
+    const langSelector = document.getElementById('languageSwitcher');
+    const dropZone = document.getElementById('dropZone');
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        const val = bytes / Math.pow(k, i);
+        return val.toFixed(i === 0 ? 0 : 1) + ' ' + sizes[i];
+    }
+
+    function formatDate(timestamp) {
+        if (!timestamp) return '?';
+        const date = new Date(timestamp);
+        let locale = currentLang;
+        if (locale === 'la') locale = 'la';
+        if (locale === 'eo') locale = 'eo';
+        if (locale === 'pt-BR') locale = 'pt-BR';
+        try {
+            return date.toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' }) +
+                   ' ' + date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+        } catch(e) {
+            return date.toLocaleString();
+        }
+    }
+
+    function addFilesFromInput(fileList) {
+        if (!fileList || fileList.length === 0) return;
+        const newEntries = [];
+        for (let i = 0; i < fileList.length; i++) {
+            const f = fileList[i];
+            newEntries.push({
+                id: nextId++,
+                name: f.name,
+                sizeBytes: f.size,
+                lastModified: f.lastModified,
+            });
+        }
+        allFiles.push(...newEntries);
+        renderFileList();
+    }
+
+    function deleteFileById(id) {
+        allFiles = allFiles.filter(f => f.id !== id);
+        renderFileList();
+    }
+
+    function clearAllFiles() {
+        if (allFiles.length === 0) return;
+        if (confirm(translations[currentLang].confirmClear)) {
+            allFiles = [];
+            renderFileList();
+        }
+    }
+
+    function compareAlpha(a,b) { return a.name.localeCompare(b.name); }
+    const alnumCollator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+    function compareAlnum(a,b) { return alnumCollator.compare(a.name, b.name); }
+    function compareDate(a,b) { return b.lastModified - a.lastModified; }
+    function compareSize(a,b) { return a.sizeBytes - b.sizeBytes; }
+
+    function getSortedFiles() {
+        if (!allFiles.length) return [];
+        if (activeSort === null) return [...allFiles];
+        const sorted = [...allFiles];
+        switch(activeSort) {
+            case 'alpha': sorted.sort(compareAlpha); break;
+            case 'alnum': sorted.sort(compareAlnum); break;
+            case 'date': sorted.sort(compareDate); break;
+            case 'size': sorted.sort(compareSize); break;
+        }
+        return sorted;
+    }
+
+    function updateActiveSortButtons() {
+        [sortAlpha, sortAlnum, sortDate, sortSize].forEach(btn => btn.classList.remove('active'));
+        if (activeSort === 'alpha') sortAlpha.classList.add('active');
+        else if (activeSort === 'alnum') sortAlnum.classList.add('active');
+        else if (activeSort === 'date') sortDate.classList.add('active');
+        else if (activeSort === 'size') sortSize.classList.add('active');
+    }
+
+    function escapeHtml(str) {
+        return str.replace(/[&<>]/g, m => {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    function renderFileList() {
+        const sorted = getSortedFiles();
+        const total = sorted.length;
+        filesCountBadge.innerText = `${total} ${total === 1 ? 'file' : 'files'}`;
+        if (total === 0) {
+            fileListArea.innerHTML = `<div class="empty-message">${translations[currentLang].emptyListMsg}</div>`;
+            return;
+        }
+        let html = `<table class="files-table"><thead><tr>
+            <th>${translations[currentLang].tableHeaderName}</th>
+            <th>${translations[currentLang].tableHeaderSize}</th>
+            <th>${translations[currentLang].tableHeaderDate}</th>
+            <th>${translations[currentLang].tableHeaderAction}</th>
+        </tr></thead><tbody>`;
+        for (const file of sorted) {
+            html += `<tr data-id="${file.id}">
+                        <td class="file-name">📄 ${escapeHtml(file.name)}</td>
+                        <td><span class="file-size">${formatFileSize(file.sizeBytes)}</span></td>
+                        <td class="file-date">📆 ${formatDate(file.lastModified)}</td>
+                        <td><button class="delete-btn" data-id="${file.id}" title="${translations[currentLang].deleteTitle}">✖️</button></td>
+                     </tr>`;
+        }
+        html += `</tbody></table>`;
+        fileListArea.innerHTML = html;
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = parseInt(btn.getAttribute('data-id'));
+                if (!isNaN(id)) deleteFileById(id);
+            });
+        });
+    }
+
+    function downloadListAsTxt() {
+        if (allFiles.length === 0) {
+            alert(translations[currentLang].noFilesExport);
+            return;
+        }
+        const sorted = getSortedFiles();
+        let content = `${translations[currentLang].exportHeader}\n`;
+        content += `=========================================\n`;
+        content += `${translations[currentLang].exportGenerated}: ${new Date().toLocaleString()}\n`;
+        content += `${translations[currentLang].exportTotal}: ${sorted.length}\n`;
+        content += `-----------------------------------------\n\n`;
+        sorted.forEach((file, idx) => {
+            content += `${idx+1}. ${translations[currentLang].exportName}: ${file.name}\n`;
+            content += `   ${translations[currentLang].exportSize}: ${formatFileSize(file.sizeBytes)}\n`;
+            content += `   ${translations[currentLang].exportDate}: ${formatDate(file.lastModified)}\n`;
+            content += `-----------------------------------------\n`;
+        });
+        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+        const a = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        a.href = url;
+        a.download = `file_list_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function setSortAndRender(type) {
+        activeSort = type;
+        updateActiveSortButtons();
+        renderFileList();
+    }
+
+    function applyLanguage() {
+        const t = translations[currentLang];
+        document.getElementById('appTitle').innerText = t.appTitle;
+        document.getElementById('uploadBtnLabel').innerHTML = t.uploadBtn + ' <input type="file" id="fileInput" multiple>';
+        document.getElementById('clearAllBtn').innerText = t.clearBtn;
+        document.getElementById('sortLabel').innerText = t.sortLabel;
+        document.getElementById('sortAlpha').innerText = t.sortAlpha;
+        document.getElementById('sortAlnum').innerText = t.sortAlnum;
+        document.getElementById('sortDate').innerText = t.sortDate;
+        document.getElementById('sortSize').innerText = t.sortSize;
+        document.getElementById('downloadTxtBtn').innerHTML = t.downloadBtn;
+        document.getElementById('filesTitle').innerText = t.filesTitle;
+        document.getElementById('footerText').innerText = t.footer;
+        const newFileInput = document.getElementById('fileInput');
+        newFileInput.addEventListener('change', onFileSelected);
+        renderFileList();
+    }
+
+    function onFileSelected(e) {
+        if (e.target.files && e.target.files.length) {
+            addFilesFromInput(e.target.files);
+        }
+        e.target.value = '';
+    }
+
+    // Drag & Drop handlers
+    function setupDragAndDrop() {
+        if (!dropZone) return;
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.add('drag-over');
+            }, false);
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.remove('drag-over');
+            }, false);
+        });
+        dropZone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files && files.length) {
+                addFilesFromInput(files);
+            }
+        });
+    }
+
+    function init() {
+        langSelector.addEventListener('change', (e) => {
+            currentLang = e.target.value;
+            applyLanguage();
+        });
+        currentLang = 'en';
+        langSelector.value = 'en';
+        applyLanguage();
+        clearBtn.addEventListener('click', clearAllFiles);
+        downloadBtn.addEventListener('click', downloadListAsTxt);
+        sortAlpha.addEventListener('click', () => setSortAndRender('alpha'));
+        sortAlnum.addEventListener('click', () => setSortAndRender('alnum'));
+        sortDate.addEventListener('click', () => setSortAndRender('date'));
+        sortSize.addEventListener('click', () => setSortAndRender('size'));
+        setupDragAndDrop();
+        window.addEventListener('dragover', (e) => e.preventDefault());
+        window.addEventListener('drop', (e) => e.preventDefault());
+    }
+    init();
+</script>
+</body>
+</html>

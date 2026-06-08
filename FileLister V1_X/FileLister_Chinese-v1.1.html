@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>FileLister - 上載、排序、匯出檔案列表 (支援拖曳)</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: system-ui, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(145deg, #f3f6fc 0%, #e9eef4 100%);
+            margin: 0;
+            min-height: 100vh;
+            padding: 2rem 1.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .card {
+            max-width: 1400px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.92);
+            border-radius: 2rem;
+            box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.25), 0 4px 12px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.6);
+        }
+
+        .header {
+            background: #ffffffcc;
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-weight: 700;
+            font-size: 1.9rem;
+            background: linear-gradient(135deg, #1F2B3C, #2c3e66);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            letter-spacing: -0.3px;
+        }
+
+        .lang-selector {
+            background: white;
+            border: 1px solid #cbdde9;
+            border-radius: 40px;
+            padding: 0.4rem 0.8rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .action-bar {
+            padding: 1.25rem 2rem;
+            background: #f8fafd;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #e9edf2;
+        }
+
+        .upload-area {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .file-input-label {
+            background: #1e2f41;
+            color: white;
+            padding: 0.6rem 1.4rem;
+            border-radius: 60px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .file-input-label:hover {
+            background: #0f2538;
+            transform: translateY(-1px);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .btn-clear {
+            background: #eef2f8;
+            border: 1px solid #cfdfed;
+            padding: 0.6rem 1.2rem;
+            border-radius: 60px;
+            font-weight: 500;
+            color: #2c3e50;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.85rem;
+        }
+
+        .btn-clear:hover {
+            background: #e2e8f0;
+        }
+
+        .btn-download {
+            background: #2b5f3b;
+            color: white;
+            border: none;
+            padding: 0.6rem 1.5rem;
+            border-radius: 60px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-download:hover {
+            background: #1e472c;
+            transform: scale(0.97);
+        }
+
+        .sort-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.65rem;
+            align-items: center;
+            background: #ffffffcc;
+            padding: 0.4rem 0.8rem;
+            border-radius: 48px;
+        }
+
+        .sort-group span {
+            font-weight: 600;
+            color: #1f3b4c;
+            font-size: 0.85rem;
+        }
+
+        .sort-btn {
+            background: transparent;
+            border: 1px solid #cbdde9;
+            padding: 0.45rem 1rem;
+            border-radius: 32px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.15s;
+            color: #1e2f3c;
+        }
+
+        .sort-btn.active {
+            background: #1e2f41;
+            border-color: #1e2f41;
+            color: white;
+        }
+
+        .sort-btn:hover:not(.active) {
+            background: #e2ebf3;
+        }
+
+        .files-container {
+            padding: 1rem 2rem 2rem 2rem;
+            background: #ffffff;
+            transition: all 0.2s ease;
+            border-radius: 1rem;
+            margin: 0.5rem;
+            border: 2px solid transparent;
+        }
+
+        .files-container.drag-over {
+            border-color: #2c5f8a;
+            background-color: #eef5fd;
+            box-shadow: inset 0 0 0 1px rgba(44, 95, 138, 0.2);
+        }
+
+        .drag-hint {
+            background: #f0f4fa;
+            border-radius: 60px;
+            padding: 0.4rem 1rem;
+            font-size: 0.75rem;
+            color: #2c5f8a;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .files-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .files-table th {
+            text-align: left;
+            padding: 1rem 0.8rem 0.8rem 0.8rem;
+            font-weight: 600;
+            color: #2d3e50;
+            border-bottom: 2px solid #e2edf2;
+        }
+
+        .files-table td {
+            padding: 0.9rem 0.8rem;
+            border-bottom: 1px solid #ecf3f8;
+            vertical-align: middle;
+        }
+
+        .files-table tr:hover td {
+            background-color: #f9fbfe;
+        }
+
+        .file-name {
+            font-weight: 500;
+            word-break: break-word;
+            font-family: monospace;
+        }
+
+        .file-size {
+            background: #f0f4f9;
+            display: inline-block;
+            padding: 0.2rem 0.7rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            font-size: 1.3rem;
+            cursor: pointer;
+            color: #acbed0;
+        }
+
+        .delete-btn:hover {
+            color: #dc3545;
+        }
+
+        .empty-message {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #6c7e91;
+            font-style: italic;
+        }
+
+        .badge-counter {
+            background: #d9e6f2;
+            border-radius: 40px;
+            padding: 0.2rem 0.8rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 0.8rem;
+            color: #1f4662;
+        }
+
+        footer {
+            background: #f1f5f9;
+            padding: 0.8rem 2rem;
+            font-size: 0.7rem;
+            color: #6c7e91;
+            text-align: right;
+            border-top: 1px solid #e2edf2;
+        }
+
+        @media (max-width: 700px) {
+            body { padding: 1rem; }
+            .action-bar { flex-direction: column; align-items: stretch; }
+            .sort-group { justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="header">
+        <h1 id="appTitle">📁 FileLister</h1>
+        <select id="languageSwitcher" class="lang-selector">
+            <option value="zh-CN">🇨🇳 简体中文</option>
+            <option value="zh-TW">🇹🇼 繁體中文</option>
+            <option value="lzh">📜 文言文</option>
+        </select>
+    </div>
+
+    <div class="action-bar">
+        <div class="upload-area">
+            <label class="file-input-label" id="uploadBtnLabel">
+                📂 + 上传文件
+                <input type="file" id="fileInput" multiple>
+            </label>
+            <button class="btn-clear" id="clearAllBtn">🗑️ 清空列表</button>
+        </div>
+        <div class="sort-group">
+            <span id="sortLabel">🔽 排序方式：</span>
+            <button data-sort="alpha" class="sort-btn" id="sortAlpha">🔤 字母顺序</button>
+            <button data-sort="alnum" class="sort-btn" id="sortAlnum">🔢 字母数字混合</button>
+            <button data-sort="date" class="sort-btn" id="sortDate">📅 修改日期</button>
+            <button data-sort="size" class="sort-btn" id="sortSize">⚖️ 文件大小</button>
+        </div>
+        <button class="btn-download" id="downloadTxtBtn">📄 导出为 .txt 文件</button>
+    </div>
+
+    <div class="files-container" id="dropZone">
+        <div class="drag-hint" id="dragHint">📁 可将文件拖拽到此区域 / 点击上方按钮手动选择</div>
+        <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap;">
+            <h3 id="filesTitle" style="margin: 0 0 0.5rem 0; font-weight: 500;">📋 已上传的文件</h3>
+            <span id="filesCountBadge" class="badge-counter">0 个文件</span>
+        </div>
+        <div id="fileListArea">
+            <div class="empty-message" id="emptyMessage">✨ 暂无文件。请点击“上传文件”或将文件拖拽至此区域。</div>
+        </div>
+    </div>
+    <footer id="footerText">
+        ⚡ 点击排序按钮可重新排列 • 可单独删除每个文件
+    </footer>
+</div>
+
+<script>
+    // ---------- 三个中文语言版本：简体，繁体，文言文 (增加拖拽提示文本) ----------
+    const translations = {
+        "zh-CN": {
+            appTitle: "📁 FileLister",
+            uploadBtn: "📂 + 上传文件",
+            clearBtn: "🗑️ 清空列表",
+            sortLabel: "🔽 排序方式：",
+            sortAlpha: "🔤 字母顺序",
+            sortAlnum: "🔢 字母数字混合",
+            sortDate: "📅 修改日期",
+            sortSize: "⚖️ 文件大小",
+            downloadBtn: "📄 导出为 .txt 文件",
+            filesTitle: "📋 已上传的文件",
+            emptyMessage: "✨ 暂无文件。请点击“上传文件”或将文件拖拽至此区域。",
+            footer: "⚡ 点击排序按钮可重新排列 • 可单独删除每个文件",
+            tableHeaderName: "📄 文件名",
+            tableHeaderSize: "💾 大小",
+            tableHeaderDate: "📅 修改日期",
+            tableHeaderAction: "🗑️ 操作",
+            deleteTitle: "删除文件",
+            confirmClear: "确定要删除列表中的所有文件吗？",
+            noFilesAlert: "没有文件可清空。",
+            noFilesExport: "列表中没有文件可导出。",
+            exportHeader: "文件列表",
+            exportGenerated: "生成时间",
+            exportTotal: "文件总数",
+            exportName: "文件名",
+            exportSize: "大小",
+            exportDate: "日期",
+            emptyListMsg: "📭 暂无文件。请上传文档或拖拽文件至此。",
+            dragHint: "📁 可将文件拖拽到此区域 / 点击上方按钮手动选择"
+        },
+        "zh-TW": {
+            appTitle: "📁 FileLister",
+            uploadBtn: "📂 + 上傳檔案",
+            clearBtn: "🗑️ 清空列表",
+            sortLabel: "🔽 排序方式：",
+            sortAlpha: "🔤 字母順序",
+            sortAlnum: "🔢 字母數字混合",
+            sortDate: "📅 修改日期",
+            sortSize: "⚖️ 檔案大小",
+            downloadBtn: "📄 匯出為 .txt 檔案",
+            filesTitle: "📋 已上傳的檔案",
+            emptyMessage: "✨ 暫無檔案。請點擊「上傳檔案」或將檔案拖曳至此區域。",
+            footer: "⚡ 點擊排序按鈕可重新排列 • 可單獨刪除每個檔案",
+            tableHeaderName: "📄 檔案名稱",
+            tableHeaderSize: "💾 大小",
+            tableHeaderDate: "📅 修改日期",
+            tableHeaderAction: "🗑️ 操作",
+            deleteTitle: "刪除檔案",
+            confirmClear: "確定要刪除列表中的所有檔案嗎？",
+            noFilesAlert: "沒有檔案可清空。",
+            noFilesExport: "列表中沒有檔案可匯出。",
+            exportHeader: "檔案列表",
+            exportGenerated: "產生時間",
+            exportTotal: "檔案總數",
+            exportName: "檔案名稱",
+            exportSize: "大小",
+            exportDate: "日期",
+            emptyListMsg: "📭 暫無檔案。請上傳文件或拖曳檔案至此。",
+            dragHint: "📁 可將檔案拖曳到此區域 / 點擊上方按鈕手動選擇"
+        },
+        "lzh": {
+            appTitle: "📁 文檔錄",
+            uploadBtn: "📂 + 上載文檔",
+            clearBtn: "🗑️ 清空列表",
+            sortLabel: "🔽 次第以：",
+            sortAlpha: "🔤 字母次第",
+            sortAlnum: "🔢 文字數字雜次",
+            sortDate: "📅 修日",
+            sortSize: "⚖️ 大小",
+            downloadBtn: "📄 出為 .txt 文",
+            filesTitle: "📋 已載文檔",
+            emptyMessage: "✨ 未見文檔。可點「上載文檔」或拖拽文檔至此。",
+            footer: "⚡ 點次第鈕可重排 • 可單刪每檔",
+            tableHeaderName: "📄 文件名",
+            tableHeaderSize: "💾 大小",
+            tableHeaderDate: "📅 修日",
+            tableHeaderAction: "🗑️ 行",
+            deleteTitle: "刪除文檔",
+            confirmClear: "果欲盡刪列表中所有文檔乎？",
+            noFilesAlert: "無文檔可清。",
+            noFilesExport: "列表中無文檔可出。",
+            exportHeader: "文檔列表",
+            exportGenerated: "生成於",
+            exportTotal: "文檔總數",
+            exportName: "文件名",
+            exportSize: "大小",
+            exportDate: "日期",
+            emptyListMsg: "📭 暫無文檔。請上載文檔或拖拽至此。",
+            dragHint: "📁 可拖拽文檔至此 / 亦可點上方按鈕手選"
+        }
+    };
+
+    let currentLang = 'zh-CN';
+    let allFiles = [];
+    let activeSort = null;
+    let nextId = 1;
+
+    // DOM elements
+    const fileInput = document.getElementById('fileInput');
+    const clearBtn = document.getElementById('clearAllBtn');
+    const downloadBtn = document.getElementById('downloadTxtBtn');
+    const sortAlpha = document.getElementById('sortAlpha');
+    const sortAlnum = document.getElementById('sortAlnum');
+    const sortDate = document.getElementById('sortDate');
+    const sortSize = document.getElementById('sortSize');
+    const fileListArea = document.getElementById('fileListArea');
+    const filesCountBadge = document.getElementById('filesCountBadge');
+    const langSelector = document.getElementById('languageSwitcher');
+    const dropZone = document.getElementById('dropZone');
+    const dragHintSpan = document.getElementById('dragHint');
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        const val = bytes / Math.pow(k, i);
+        return val.toFixed(i === 0 ? 0 : 1) + ' ' + sizes[i];
+    }
+
+    function formatDate(timestamp) {
+        if (!timestamp) return '?';
+        const date = new Date(timestamp);
+        let locale = (currentLang === 'zh-CN') ? 'zh-CN' : (currentLang === 'zh-TW' ? 'zh-TW' : 'zh-CN');
+        try {
+            return date.toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' }) +
+                   ' ' + date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+        } catch(e) {
+            return date.toLocaleString();
+        }
+    }
+
+    function addFilesFromInput(fileList) {
+        if (!fileList || fileList.length === 0) return;
+        const newEntries = [];
+        for (let i = 0; i < fileList.length; i++) {
+            const f = fileList[i];
+            newEntries.push({
+                id: nextId++,
+                name: f.name,
+                sizeBytes: f.size,
+                lastModified: f.lastModified,
+            });
+        }
+        allFiles.push(...newEntries);
+        renderFileList();
+    }
+
+    function deleteFileById(id) {
+        allFiles = allFiles.filter(f => f.id !== id);
+        renderFileList();
+    }
+
+    function clearAllFiles() {
+        if (allFiles.length === 0) return;
+        if (confirm(translations[currentLang].confirmClear)) {
+            allFiles = [];
+            renderFileList();
+        }
+    }
+
+    function compareAlpha(a,b) { return a.name.localeCompare(b.name, currentLang === 'lzh' ? 'zh' : currentLang); }
+    const alnumCollator = new Intl.Collator(currentLang === 'lzh' ? 'zh' : currentLang, { numeric: true, sensitivity: 'base' });
+    function compareAlnum(a,b) { return alnumCollator.compare(a.name, b.name); }
+    function compareDate(a,b) { return b.lastModified - a.lastModified; }
+    function compareSize(a,b) { return a.sizeBytes - b.sizeBytes; }
+
+    function getSortedFiles() {
+        if (!allFiles.length) return [];
+        if (activeSort === null) return [...allFiles];
+        const sorted = [...allFiles];
+        switch(activeSort) {
+            case 'alpha': sorted.sort(compareAlpha); break;
+            case 'alnum': sorted.sort(compareAlnum); break;
+            case 'date': sorted.sort(compareDate); break;
+            case 'size': sorted.sort(compareSize); break;
+        }
+        return sorted;
+    }
+
+    function updateActiveSortButtons() {
+        [sortAlpha, sortAlnum, sortDate, sortSize].forEach(btn => btn.classList.remove('active'));
+        if (activeSort === 'alpha') sortAlpha.classList.add('active');
+        else if (activeSort === 'alnum') sortAlnum.classList.add('active');
+        else if (activeSort === 'date') sortDate.classList.add('active');
+        else if (activeSort === 'size') sortSize.classList.add('active');
+    }
+
+    function escapeHtml(str) {
+        return str.replace(/[&<>]/g, m => {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    function renderFileList() {
+        const sorted = getSortedFiles();
+        const total = sorted.length;
+        filesCountBadge.innerText = `${total} 个文件`;
+        if (total === 0) {
+            fileListArea.innerHTML = `<div class="empty-message">${translations[currentLang].emptyListMsg}</div>`;
+            return;
+        }
+        let html = `<table class="files-table"><thead><tr>
+            <th>${translations[currentLang].tableHeaderName}</th>
+            <th>${translations[currentLang].tableHeaderSize}</th>
+            <th>${translations[currentLang].tableHeaderDate}</th>
+            <th>${translations[currentLang].tableHeaderAction}</th>
+        </tr></thead><tbody>`;
+        for (const file of sorted) {
+            html += `<tr data-id="${file.id}">
+                        <td class="file-name">📄 ${escapeHtml(file.name)}</td>
+                        <td><span class="file-size">${formatFileSize(file.sizeBytes)}</span></td>
+                        <td class="file-date">📆 ${formatDate(file.lastModified)}</td>
+                        <td><button class="delete-btn" data-id="${file.id}" title="${translations[currentLang].deleteTitle}">✖️</button></td>
+                    </tr>`;
+        }
+        html += `</tbody></table>`;
+        fileListArea.innerHTML = html;
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = parseInt(btn.getAttribute('data-id'));
+                if (!isNaN(id)) deleteFileById(id);
+            });
+        });
+    }
+
+    function downloadListAsTxt() {
+        if (allFiles.length === 0) {
+            alert(translations[currentLang].noFilesExport);
+            return;
+        }
+        const sorted = getSortedFiles();
+        let content = `${translations[currentLang].exportHeader}\n`;
+        content += `=========================================\n`;
+        content += `${translations[currentLang].exportGenerated}: ${new Date().toLocaleString(currentLang === 'lzh' ? 'zh-CN' : currentLang)}\n`;
+        content += `${translations[currentLang].exportTotal}: ${sorted.length}\n`;
+        content += `-----------------------------------------\n\n`;
+        sorted.forEach((file, idx) => {
+            content += `${idx+1}. ${translations[currentLang].exportName}: ${file.name}\n`;
+            content += `   ${translations[currentLang].exportSize}: ${formatFileSize(file.sizeBytes)}\n`;
+            content += `   ${translations[currentLang].exportDate}: ${formatDate(file.lastModified)}\n`;
+            content += `-----------------------------------------\n`;
+        });
+        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+        const a = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        a.href = url;
+        a.download = `file_list_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function setSortAndRender(type) {
+        activeSort = type;
+        updateActiveSortButtons();
+        renderFileList();
+    }
+
+    function applyLanguage() {
+        const t = translations[currentLang];
+        document.getElementById('appTitle').innerText = t.appTitle;
+        document.getElementById('uploadBtnLabel').innerHTML = t.uploadBtn + ' <input type="file" id="fileInput" multiple>';
+        document.getElementById('clearAllBtn').innerText = t.clearBtn;
+        document.getElementById('sortLabel').innerText = t.sortLabel;
+        document.getElementById('sortAlpha').innerText = t.sortAlpha;
+        document.getElementById('sortAlnum').innerText = t.sortAlnum;
+        document.getElementById('sortDate').innerText = t.sortDate;
+        document.getElementById('sortSize').innerText = t.sortSize;
+        document.getElementById('downloadTxtBtn').innerHTML = t.downloadBtn;
+        document.getElementById('filesTitle').innerText = t.filesTitle;
+        document.getElementById('footerText').innerText = t.footer;
+        if (dragHintSpan) dragHintSpan.innerText = t.dragHint;
+        // 重新绑定文件输入事件
+        const newFileInput = document.getElementById('fileInput');
+        newFileInput.addEventListener('change', onFileSelected);
+        renderFileList();
+    }
+
+    function onFileSelected(e) {
+        if (e.target.files && e.target.files.length) {
+            addFilesFromInput(e.target.files);
+        }
+        e.target.value = '';
+    }
+
+    // ---------- 拖拽功能 ----------
+    function setupDragAndDrop() {
+        if (!dropZone) return;
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.add('drag-over');
+            }, false);
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.remove('drag-over');
+            }, false);
+        });
+        dropZone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files && files.length) {
+                addFilesFromInput(files);
+            }
+        });
+    }
+
+    function init() {
+        langSelector.addEventListener('change', (e) => {
+            currentLang = e.target.value;
+            applyLanguage();
+        });
+        currentLang = 'zh-CN';
+        langSelector.value = 'zh-CN';
+        applyLanguage();
+        clearBtn.addEventListener('click', clearAllFiles);
+        downloadBtn.addEventListener('click', downloadListAsTxt);
+        sortAlpha.addEventListener('click', () => setSortAndRender('alpha'));
+        sortAlnum.addEventListener('click', () => setSortAndRender('alnum'));
+        sortDate.addEventListener('click', () => setSortAndRender('date'));
+        sortSize.addEventListener('click', () => setSortAndRender('size'));
+        setupDragAndDrop();
+        // 避免整个页面被拖拽时打开文件
+        window.addEventListener('dragover', (e) => e.preventDefault());
+        window.addEventListener('drop', (e) => e.preventDefault());
+    }
+    init();
+</script>
+</body>
+</html>
